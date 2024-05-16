@@ -221,19 +221,13 @@ if __name__=="__main__":
         if a==3:
             decision, filename,filename2=getCommand.split(' ')
             if(decision == "update"):
-                #print("file1 size before appending : ",os.path.getsize(filename1))
-                #print("file2 size before appending : ",os.path.getsize(filename2))
                 numChunks = math.ceil(os.path.getsize(filename)/2048)
                 f1=open(filename2,"rb")
                 with open(filename,"ab") as f:
                     f.write(f1.read())
                 f1.close()
                 getCommand=decision+" "+filename
-                # print(getCommand)
-                #print("file1 size after appending : ",os.path.getsize(filename1))
-                #print("file2 size after appending : ",os.path.getsize(filename2))
                 chunks=connect_to_master_server(getCommand,a-1)
-                # print(chunks)
                 if chunks:
                     connect_to_chunk_server_update(decision,chunks,filename,numChunks)
                     print("file updation successful!!!")

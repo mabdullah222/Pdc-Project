@@ -8,14 +8,6 @@ import math
 MAX = 10000
 #Connecting to the master_server
 
-def list_files(directory):
-    if(os.path.exists(directory)):
-        files = os.listdir(directory)
-        return [file for file in files if os.path.isfile(os.path.join(directory, file))]
-    else:
-        return []
-
-
 
 def connect_to_master_server(getCommand, no_of_arg):
     try:
@@ -33,8 +25,6 @@ def connect_to_master_server(getCommand, no_of_arg):
         split_command = getCommand.split(' ')
         decision = split_command[0]
         filename = ' '.join(split_command[1:])
-        # print(decision)
-        # print(filename)
         if(decision=="upload"):
             size=str(os.path.getsize(filename))
             fileplussize="client"+":upload:"+filename+":"+size
@@ -97,16 +87,12 @@ def connect_to_master_server(getCommand, no_of_arg):
             return chunks
             
 
-    if no_of_arg==1:
+    elif no_of_arg==1:
         f_list_files="client"+":listfiles:"+"dummy1"+":dummy2"             
         s.send(bytes(f_list_files,"utf-8"))
         status=s.recv(2048)
         status=pickle.loads(status)
-        print("Files which are available:", end=" ")
-        for i in status:
-            print(i, end=" ")   
-        print()    
-
+        return status
 
 #Connecting to the chunk_server
 def connect_to_chunk_server(decision,chunks,filename):
@@ -207,26 +193,14 @@ if uploaded_file:
     else:
         st.error("File already exists!")
 
-# Download File Section
-st.header("Download File")
-download_filename = st.text_input("Enter filename to download")
-download_button = st.button("Download")
-
-if download_button:
-    chunks = connect_to_master_server(f"download {download_filename}", 2)
-    if chunks:
-        connect_to_chunk_server("download", chunks, download_filename)
-        st.success("File downloaded successfully!")
-    else:
-        st.error("File not found!")
 
 # Update File Section
 st.header("Update File")
-update_file1 = st.file_uploader("Choose the file to update")
+update_file1 = st.text_input("Filename to update")
 update_file2 = st.file_uploader("Choose the file to append")
 
 if update_file1 and update_file2:
-    filename1 = update_file1.name
+    filename1 = update_file1
     filename2 = update_file2.name
     numChunks = math.ceil(os.path.getsize(filename1) / 2048)
     with open(filename1, "ab") as f:
@@ -239,14 +213,22 @@ if update_file1 and update_file2:
         st.error("File update unsuccessful!")
 
 with st.sidebar:
-    st.header("List Files in Client Directory")
-    client_files = list_files("Client")
+    st.header("Uploaded Files")
 
-    if client_files:
-        st.write("Downloaded Files:")
-        for file in client_files:
-            st.write(file)
+    files = connect_to_master_server("", 1)
+
+    if files:
+        st.write("Files available for download:")
+        for file in files:
+            if st.button(file):
+                chunks = connect_to_master_server(f"download {file}", 2)
+                if chunks:
+                    connect_to_chunk_server("download", chunks, file)
+                    st.success("File downloaded successfully!")
+                else:
+                    st.error("File not found!")
     else:
         st.write("No files available for download.")
+
 
 st.write("---")
